@@ -246,6 +246,14 @@ def student_dashboard():
 def register():
     return render_template('register.html')
 
+@app.route('/recognize')
+def recognize():
+    # For Render version, redirect to manual attendance since face recognition isn't available
+    if 'user_id' in session and session['role'] == 'driver':
+        return redirect(url_for('driver_attendance'))
+    else:
+        return redirect(url_for('login'))
+
 @app.route('/student_register')
 def student_register():
     return render_template('student_register.html')
