@@ -242,6 +242,128 @@ def student_dashboard():
                          bus_pass=bus_pass,
                          attendance_history=attendance_history)
 
+@app.route('/register')
+def register():
+    return render_template('register.html')
+
+@app.route('/student_register')
+def student_register():
+    return render_template('student_register.html')
+
+@app.route('/apply_pass')
+@login_required
+def apply_pass():
+    if session['role'] != 'student':
+        return redirect(url_for('index'))
+    
+    student = get_student_by_user_id(session['user_id'])
+    
+    if not student:
+        flash('Student profile not found', 'error')
+        return redirect(url_for('index'))
+    
+    conn = get_db_connection()
+    
+    # Check if student already has a pass
+    existing_pass = conn.execute('SELECT * FROM bus_passes WHERE student_id = ? ORDER BY created_at DESC LIMIT 1', 
+                               (student['student_id'],)).fetchone()
+    
+    conn.close()
+    
+    return render_template('apply_pass.html', student=student, existing_pass=existing_pass)
+
+@app.route('/driver/update_location', methods=['GET', 'POST'])
+@login_required
+def driver_update_location():
+    if session['role'] != 'driver':
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        location = request.form.get('location')
+        destination = request.form.get('destination')
+        distance_left = request.form.get('distance_left')
+        time_required = request.form.get('time_required')
+        custom_message = request.form.get('custom_message')
+        
+        # Save location update to database
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT INTO bus_locations (driver_id, current_location, destination, distance_left, time_required, message, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (session['user_id'], location, destination, distance_left, time_required, custom_message, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+        conn.commit()
+        conn.close()
+        
+        flash('Location updated successfully!', 'success')
+        return redirect(url_for('driver_dashboard'))
+    
+    return render_template('driver_update_location.html')
+
+@app.route('/api/bus_location')
+def get_bus_location():
+    conn = get_db_connection()
+    location = conn.execute('''
+        SELECT current_location, destination, distance_left, time_required, message, created_at
+        FROM bus_locations 
+        ORDER BY created_at DESC 
+        LIMIT 1
+    ''').fetchone()
+    conn.close()
+    
+    if location:
+        return jsonify({
+            'success': True,
+            'location': dict(location)
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': 'No location updates available'
+        })
+
+@app.route('/driver/attendance', methods=['GET', 'POST'])
+@login_required
+def driver_attendance():
+    if session['role'] != 'driver':
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        student_id = request.form.get('student_id')
+        status = request.form.get('status', 'present')
+        
+        # Get student and pass info
+        conn = get_db_connection()
+        student = conn.execute('SELECT * FROM students WHERE student_id = ?', (student_id,)).fetchone()
+        bus_pass = conn.execute('SELECT * FROM bus_passes WHERE student_id = ? AND status = "approved"', (student_id,)).fetchone()
+        
+        if student and bus_pass:
+            # Mark attendance
+            conn.execute('''
+                INSERT INTO attendance (student_id, pass_id, date, boarding_time, verification_type, status)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (student_id, bus_pass['pass_id'], datetime.now().strftime('%Y-%m-%d'), 
+                  datetime.now().strftime('%H:%M:%S'), 'manual', status))
+            conn.commit()
+            
+            flash(f'Attendance marked for {student["name"]}', 'success')
+        else:
+            flash('Student not found or no valid bus pass', 'error')
+        
+        conn.close()
+        return redirect(url_for('driver_attendance'))
+    
+    # Get students with approved passes
+    conn = get_db_connection()
+    students = conn.execute('''
+        SELECT s.student_id, s.name, b.pass_number, b.route
+        FROM students s
+        JOIN bus_passes b ON s.student_id = b.student_id
+        WHERE b.status = 'approved'
+    ''').fetchall()
+    conn.close()
+    
+    return render_template('driver_attendance.html', students=students)
+
 @app.route('/driver/send_parent_notification', methods=['GET', 'POST'])
 @login_required
 def driver_send_parent_notification():
@@ -344,6 +466,20 @@ def init_database():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (student_id) REFERENCES students (student_id),
                 FOREIGN KEY (pass_id) REFERENCES bus_passes (pass_id)
+            )
+        ''')
+        
+        conn.execute('''
+            CREATE TABLE bus_locations (
+                location_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                driver_id INTEGER,
+                current_location TEXT,
+                destination TEXT,
+                distance_left TEXT,
+                time_required TEXT,
+                message TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (driver_id) REFERENCES users (user_id)
             )
         ''')
         
