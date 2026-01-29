@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Register Face - Face Recognition System{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-user-plus"></i> Register New Face</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <p class="text-muted">Click the button below to capture your face. Make sure your face is clearly visible.</p>
+                    </div>
+                    
+                    <div class="text-center mb-4">
+                        <button id="captureBtn" class="btn btn-primary btn-lg">
+                            <i class="fas fa-camera"></i> Capture Face
+                        </button>
+                        <button id="testCameraBtn" class="btn btn-info btn-lg ms-3">
+                            <i class="fas fa-vr-cardboard"></i> Test Camera
+                        </button>
+                    </div>
+                    
+                    <div id="loading" class="loading">
+                        <div class="spinner"></div>
+                        <p class="mt-3">Capturing image...</p>
+                    </div>
+                    
+                    <div id="imagePreview" class="text-center" style="display: none;">
+                        <h4 class="mb-3">Captured Image</h4>
+                        <img id="capturedImage" class="camera-preview mb-3" alt="Captured face">
+                        <div id="faceInfo" class="mb-3"></div>
+                        
+                        <form id="nameForm" class="mt-4">
+                            <div class="mb-3">
+                                <label for="nameInput" class="form-label">Enter Your Name:</label>
+                                <input type="text" class="form-control" id="nameInput" placeholder="Enter your name" required>
+                                <input type="hidden" id="tempPath">
+                            </div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Save Face
+                            </button>
+                            <button type="button" id="retakeBtn" class="btn btn-warning ms-2">
+                                <i class="fas fa-redo"></i> Retake
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div id="statusMessage"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Ensure jQuery is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof jQuery === 'undefined') {
+        console.error('jQuery not loaded');
+        return;
+    }
+    
+    $(document).ready(function() {
+    $('#testCameraBtn').click(function() {
+        $('#loading').show();
+        $('#testCameraBtn').prop('disabled', true);
+        $('#captureBtn').prop('disabled', true);
+        $('#statusMessage').hide();
+        
+        $.ajax({
+            url: '/test_camera',
+            type: 'GET',
+            success: function(response) {
+                $('#loading').hide();
+                $('#testCameraBtn').prop('disabled', false);
+                $('#captureBtn').prop('disabled', false);
+                
+                if (response.success) {
+                    showStatus('Camera test successful! ' + response.message + ' (Resolution: ' + response.resolution + ')', 'success');
+                } else {
+                    showStatus('Camera test failed: ' + response.error, 'error');
+                }
+            },
+            error: function() {
+                $('#loading').hide();
+                $('#testCameraBtn').prop('disabled', false);
+                $('#captureBtn').prop('disabled', false);
+                showStatus('Error testing camera. Please check server logs.', 'error');
+            }
+        });
+    });
+    
+    $('#captureBtn').click(function() {
+        $('#loading').show();
+        $('#captureBtn').prop('disabled', true);
+        $('#testCameraBtn').prop('disabled', true);
+        $('#statusMessage').hide();
+        
+        $.ajax({
+            url: '/capture_register',
+            type: 'POST',
+            success: function(response) {
+                $('#loading').hide();
+                $('#captureBtn').prop('disabled', false);
+                $('#testCameraBtn').prop('disabled', false);
+                
+                if (response.success) {
+                    $('#capturedImage').attr('src', response.image);
+                    $('#tempPath').val(response.temp_path);
+                    $('#faceInfo').html('<div class="alert alert-info"><i class="fas fa-check-circle"></i> ' + response.faces_detected + ' face(s) detected</div>');
+                    $('#imagePreview').show();
+                } else {
+                    showStatus(response.error, 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#loading').hide();
+                $('#captureBtn').prop('disabled', false);
+                $('#testCameraBtn').prop('disabled', false);
+                console.error('Capture error:', xhr.responseText);
+                showStatus('Error capturing image: ' + (xhr.responseJSON ? xhr.responseJSON.error : error), 'error');
+            }
+        });
+    });
+    
+    $('#nameForm').submit(function(e) {
+        e.preventDefault();
+        
+        var name = $('#nameInput').val().trim();
+        var tempPath = $('#tempPath').val();
+        
+        if (!name) {
+            showStatus('Please enter your name', 'error');
+            return;
+        }
+        
+        $('#loading').show();
+        $('button').prop('disabled', true);
+        
+        $.ajax({
+            url: '/save_face',
+            type: 'POST',
+            data: {
+                name: name,
+                temp_path: tempPath
+            },
+            success: function(response) {
+                $('#loading').hide();
+                $('button').prop('disabled', false);
+                
+                if (response.success) {
+                    showStatus(response.message, 'success');
+                    setTimeout(function() {
+                        resetForm();
+                    }, 2000);
+                } else {
+                    showStatus(response.error, 'error');
+                }
+            },
+            error: function() {
+                $('#loading').hide();
+                $('button').prop('disabled', false);
+                showStatus('Error saving face. Please try again.', 'error');
+            }
+        });
+    });
+    
+    $('#retakeBtn').click(function() {
+        resetForm();
+    });
+    
+    function resetForm() {
+        $('#imagePreview').hide();
+        $('#nameInput').val('');
+        $('#tempPath').val('');
+        $('#statusMessage').hide();
+    }
+    
+    function showStatus(message, type) {
+        var statusClass = 'status-' + type;
+        var icon = type === 'success' ? 'check-circle' : 'exclamation-triangle';
+        
+        $('#statusMessage').html(
+            '<div class="status-message ' + statusClass + '">' +
+            '<i class="fas fa-' + icon + '"></i> ' + message +
+            '</div>'
+        ).show();
+    }
+    });
+    });
+</script>
+{% endblock %}

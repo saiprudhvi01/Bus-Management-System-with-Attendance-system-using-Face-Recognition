@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark Attendance - Smart Campus Transit System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        .attendance-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 900px;
+            margin: 30px auto;
+        }
+        .btn-success {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+            border-radius: 25px;
+            padding: 15px 30px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+        .camera-preview {
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 100%;
+            height: auto;
+        }
+        .status-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+        .status-success {
+            background: linear-gradient(45deg, #d4edda, #c3e6cb);
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status-error {
+            background: linear-gradient(45deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status-warning {
+            background: linear-gradient(45deg, #fff3cd, #ffeeba);
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #28a745;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .student-info-card {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3);
+        }
+        .student-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .student-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .detail-item {
+            display: flex;
+            align-items: center;
+        }
+        .detail-item i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        .attendance-success {
+            text-align: center;
+            padding: 20px;
+        }
+        .attendance-success i {
+            font-size: 4rem;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        .attendance-counter {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .counter-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header-section h2 {
+            color: #28a745;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .current-time {
+            font-size: 1.1rem;
+            color: #666;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('driver_dashboard') }}">
+                <i class="fas fa-bus"></i> Smart Campus Transit
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('driver_dashboard') }}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <span class="navbar-text me-3 current-time" id="currentTime"></span>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="attendance-card">
+        <!-- Header -->
+        <div class="header-section">
+            <i class="fas fa-user-check fa-3x text-success mb-3"></i>
+            <h2>Face Recognition Attendance</h2>
+            <p class="text-muted">Position student in front of camera for automatic attendance marking</p>
+            <div class="current-time" id="headerTime"></div>
+        </div>
+
+        <!-- Camera Section -->
+        <div class="text-center mb-4">
+            <button id="captureBtn" class="btn btn-success btn-lg">
+                <i class="fas fa-camera"></i> Capture & Mark Attendance
+            </button>
+            <button id="testCameraBtn" class="btn btn-info btn-lg ms-3">
+                <i class="fas fa-vr-cardboard"></i> Test Camera
+            </button>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p class="mt-3">Capturing and recognizing...</p>
+        </div>
+        
+        <div id="recognitionResult" style="display: none;">
+            <h4 class="mb-3 text-center">Recognition Result</h4>
+            <div class="text-center mb-3">
+                <img id="capturedImage" class="camera-preview" alt="Captured face">
+            </div>
+            
+            <div id="resultInfo">
+                <!-- Result will be displayed here -->
+            </div>
+            
+            <div class="text-center">
+                <button id="tryAgainBtn" class="btn btn-primary">
+                    <i class="fas fa-redo"></i> Mark Next Student
+                </button>
+            </div>
+        </div>
+        
+        <div id="statusMessage"></div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Ensure jQuery is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof jQuery === 'undefined') {
+                console.error('jQuery not loaded');
+                return;
+            }
+            
+            $(document).ready(function() {
+                let attendanceCount = 0;
+                
+                // Update current time
+                function updateTime() {
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                    const dateString = now.toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                    const timeDisplay = `${dateString} | ${timeString}`;
+                    document.getElementById('currentTime').textContent = timeDisplay;
+                    document.getElementById('headerTime').textContent = timeDisplay;
+                }
+                
+                updateTime();
+                setInterval(updateTime, 1000);
+                
+                $('#testCameraBtn').click(function() {
+                    $('#loading').show();
+                    $('#testCameraBtn').prop('disabled', true);
+                    $('#captureBtn').prop('disabled', true);
+                    $('#statusMessage').hide();
+                    
+                    $.ajax({
+                        url: '/test_camera',
+                        type: 'GET',
+                        success: function(response) {
+                            $('#loading').hide();
+                            $('#testCameraBtn').prop('disabled', false);
+                            $('#captureBtn').prop('disabled', false);
+                            
+                            if (response.success) {
+                                showStatus('Camera test successful! ' + response.message + ' (Resolution: ' + response.resolution + ')', 'success');
+                            } else {
+                                showStatus('Camera test failed: ' + response.error, 'error');
+                            }
+                        },
+                        error: function() {
+                            $('#loading').hide();
+                            $('#testCameraBtn').prop('disabled', false);
+                            $('#captureBtn').prop('disabled', false);
+                            showStatus('Error testing camera. Please check server logs.', 'error');
+                        }
+                    });
+                });
+                
+                $('#captureBtn').click(function() {
+                    $('#loading').show();
+                    $('#captureBtn').prop('disabled', true);
+                    $('#testCameraBtn').prop('disabled', true);
+                    $('#statusMessage').hide();
+                    $('#recognitionResult').hide();
+                    
+                    $.ajax({
+                        url: '/capture_attendance',
+                        type: 'POST',
+                        success: function(response) {
+                            $('#loading').hide();
+                            $('#captureBtn').prop('disabled', false);
+                            $('#testCameraBtn').prop('disabled', false);
+                            
+                            if (response.success) {
+                                $('#capturedImage').attr('src', response.image);
+                                
+                                let resultHtml = '';
+                                if (response.student_info) {
+                                    attendanceCount++;
+                                    
+                                    resultHtml = '<div class="student-info-card">' +
+                                                '<div class="student-name"><i class="fas fa-check-circle"></i> ' + response.student_info.name + '</div>' +
+                                                '<div class="student-details">' +
+                                                '<div class="detail-item"><i class="fas fa-id-card"></i> <strong>Roll:</strong> ' + response.student_info.roll_number + '</div>' +
+                                                '<div class="detail-item"><i class="fas fa-building"></i> <strong>Dept:</strong> ' + response.student_info.department + '</div>' +
+                                                '<div class="detail-item"><i class="fas fa-ticket-alt"></i> <strong>Pass:</strong> ' + response.student_info.pass_number + '</div>' +
+                                                '<div class="detail-item"><i class="fas fa-route"></i> <strong>Route:</strong> ' + response.student_info.route + '</div>' +
+                                                '</div>' +
+                                                '</div>';
+                                    
+                                    if (response.attendance_marked) {
+                                        resultHtml += '<div class="attendance-success">' +
+                                                    '<i class="fas fa-check-circle"></i>' +
+                                                    '<h4>Attendance Marked Successfully!</h4>' +
+                                                    '<p>Student has been marked present for today</p>' +
+                                                    '</div>';
+                                    }
+                                    
+                                    resultHtml += '<div class="attendance-counter">' +
+                                                '<div class="counter-number">' + attendanceCount + '</div>' +
+                                                '<div>Students Marked Present</div>' +
+                                                '</div>';
+                                    
+                                } else {
+                                    resultHtml = '<div class="alert alert-warning">' +
+                                                '<i class="fas fa-exclamation-triangle"></i> ' + response.message + '</div>';
+                                }
+                                
+                                $('#resultInfo').html(resultHtml);
+                                $('#recognitionResult').show();
+                            } else {
+                                showStatus(response.error, 'error');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            $('#loading').hide();
+                            $('#captureBtn').prop('disabled', false);
+                            $('#testCameraBtn').prop('disabled', false);
+                            console.error('Capture error:', xhr.responseText);
+                            showStatus('Error capturing attendance: ' + (xhr.responseJSON ? xhr.responseJSON.error : error), 'error');
+                        }
+                    });
+                });
+                
+                $('#tryAgainBtn').click(function() {
+                    $('#recognitionResult').hide();
+                    $('#statusMessage').hide();
+                });
+                
+                function showStatus(message, type) {
+                    var statusClass = 'status-' + type;
+                    var icon = type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'exclamation-triangle';
+                    
+                    $('#statusMessage').html(
+                        '<div class="status-message ' + statusClass + '">' +
+                        '<i class="fas fa-' + icon + '"></i> ' + message +
+                        '</div>'
+                    ).show();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

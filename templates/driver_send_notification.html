@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send WhatsApp Notification - Smart Campus Transit System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        .notification-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 900px;
+            margin: 30px auto;
+        }
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header-section h2 {
+            color: #667eea;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            padding: 12px;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-success {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+        .status-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+        .status-success {
+            background: linear-gradient(45deg, #d4edda, #c3e6cb);
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status-error {
+            background: linear-gradient(45deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .notification-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        .current-time {
+            font-size: 1.1rem;
+            color: #667eea;
+            font-weight: 600;
+        }
+        .student-info {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .email-preview {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .email-preview h6 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('driver_dashboard') }}">
+                <i class="fas fa-bus"></i> Smart Campus Transit
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('driver_dashboard') }}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a class="nav-link" href="{{ url_for('driver_attendance') }}">
+                    <i class="fas fa-user-check"></i> Attendance
+                </a>
+                <a class="nav-link" href="{{ url_for('driver_update_location') }}">
+                    <i class="fas fa-map-marked-alt"></i> Update Location
+                </a>
+                <span class="navbar-text me-3 current-time" id="currentTime"></span>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="notification-card">
+        <!-- Header -->
+        <div class="header-section">
+            <i class="fab fa-whatsapp notification-icon"></i>
+            <h2>Send WhatsApp Notification</h2>
+            <p class="text-muted">Send WhatsApp updates to parents about student's bus journey</p>
+        </div>
+
+        <form id="notificationForm">
+            <!-- Student Selection -->
+            <div class="mb-4">
+                <label for="studentSelect" class="form-label">
+                    <i class="fas fa-user-graduate"></i> Select Student *
+                </label>
+                <select class="form-select" id="studentSelect" name="student_id" required onchange="updateStudentInfo()">
+                    <option value="">Choose a student...</option>
+                    {% for student in students %}
+                    <option value="{{ student.student_id }}" 
+                            data-name="{{ student.name }}" 
+                            data-pass="{{ student.pass_number }}"
+                            data-route="{{ student.route }}">
+                        {{ student.name }} - Pass: {{ student.pass_number }} (Route: {{ student.route }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Student Info Display -->
+            <div id="studentInfo" class="student-info" style="display: none;">
+                <div class="row">
+                    <div class="col-md-12">
+                        <strong>Student Name:</strong> <span id="displayName">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Parent Phone Input -->
+            <div class="mb-4">
+                <label for="parent_phone" class="form-label">
+                    <i class="fab fa-whatsapp"></i> Parent WhatsApp Number *
+                </label>
+                <input type="tel" class="form-control" id="parent_phone" name="parent_phone" 
+                       placeholder="Enter parent's WhatsApp number (e.g., +91-9876543210)" required>
+                <small class="text-muted">Enter the WhatsApp number where you want to send the notification</small>
+            </div>
+            
+            <!-- Driver Name -->
+            <div class="mb-4">
+                <label for="driver_name" class="form-label">
+                    <i class="fas fa-id-card"></i> Your Name (Driver) *
+                </label>
+                <input type="text" class="form-control" id="driver_name" name="driver_name" 
+                       placeholder="Enter your name" value="Bus Driver" required>
+            </div>
+            
+            <!-- Location Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label for="location" class="form-label">
+                        <i class="fas fa-map-pin"></i> Current Location *
+                    </label>
+                    <input type="text" class="form-control" id="location" name="location" 
+                           placeholder="e.g., Near City Center Bus Stop" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="distance_left" class="form-label">
+                        <i class="fas fa-road"></i> Distance Left *
+                    </label>
+                    <input type="text" class="form-control" id="distance_left" name="distance_left" 
+                           placeholder="e.g., 5 km" required>
+                </div>
+            </div>
+            
+            <!-- Time Required -->
+            <div class="mb-4">
+                <label for="time_required" class="form-label">
+                    <i class="fas fa-clock"></i> Estimated Time Required *
+                </label>
+                <input type="text" class="form-control" id="time_required" name="time_required" 
+                       placeholder="e.g., 15 minutes" required>
+            </div>
+            
+            <!-- Custom Message -->
+            <div class="mb-4">
+                <label for="custom_message" class="form-label">
+                    <i class="fas fa-comment"></i> Message for Parent *
+                </label>
+                <textarea class="form-control" id="custom_message" name="custom_message" rows="4" 
+                          placeholder="Enter your message for the parent..." required></textarea>
+            </div>
+            
+            <!-- WhatsApp Message Preview -->
+            <div class="email-preview">
+                <h6><i class="fab fa-whatsapp"></i> WhatsApp Message Preview</h6>
+                <div id="emailPreviewContent">
+                    <p><strong>To:</strong> <span id="previewPhone">-</span></p>
+                    <p><strong>Student:</strong> <span id="previewStudentName">-</span></p>
+                    <hr>
+                    <div style="background: #e8f5e8; padding: 15px; border-radius: 10px; font-family: monospace;">
+                        <div id="whatsappPreview">🚌 *Smart Campus Transit System*
+
+📋 *Student Update*
+👤 Student: -
+👨‍✈️ Driver: -
+📍 Current Location: -
+🛣️ Distance Left: -
+⏰ Time Required: -
+
+💬 *Driver Message:* -
+
+---
+This is an automated message from Smart Campus Transit System.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fab fa-whatsapp"></i> Send WhatsApp Message
+                </button>
+                <a href="{{ url_for('driver_dashboard') }}" class="btn btn-outline-secondary btn-lg ms-3">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </form>
+        
+        <div id="statusMessage"></div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const dateString = now.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            document.getElementById('currentTime').textContent = `${dateString} | ${timeString}`;
+        }
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Update student info when selection changes
+        function updateStudentInfo() {
+            const select = document.getElementById('studentSelect');
+            const option = select.options[select.selectedIndex];
+            
+            if (option.value) {
+                const name = option.dataset.name;
+                
+                // Update student name display
+                document.getElementById('displayName').textContent = name;
+                
+                // Update form field
+                document.getElementById('student_name').value = name;
+                
+                // Show student info
+                document.getElementById('studentInfo').style.display = 'block';
+                
+                // Update preview
+                updateEmailPreview();
+            } else {
+                document.getElementById('studentInfo').style.display = 'none';
+            }
+        }
+        
+        // Update email preview
+        function updateEmailPreview() {
+            const studentName = document.getElementById('student_name').value || '-';
+            const parentPhone = document.getElementById('parent_phone').value || '-';
+            const driverName = document.getElementById('driver_name').value || '-';
+            const location = document.getElementById('location').value || '-';
+            const distance = document.getElementById('distance_left').value || '-';
+            const time = document.getElementById('time_required').value || '-';
+            const message = document.getElementById('custom_message').value || '-';
+            
+            document.getElementById('previewPhone').textContent = parentPhone;
+            document.getElementById('previewStudentName').textContent = studentName;
+            
+            // Update WhatsApp preview
+            const whatsappMessage = `🚌 *Smart Campus Transit System*
+
+📋 *Student Update*
+👤 Student: ${studentName}
+👨‍✈️ Driver: ${driverName}
+📍 Current Location: ${location}
+🛣️ Distance Left: ${distance}
+⏰ Time Required: ${time}
+
+💬 *Driver Message:* ${message}
+
+---
+This is an automated message from Smart Campus Transit System.`;
+            
+            document.getElementById('whatsappPreview').textContent = whatsappMessage;
+        }
+        
+        // Add hidden field for student name
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('notificationForm');
+            
+            // Add hidden field for student name
+            form.innerHTML += '<input type="hidden" id="student_name" name="student_name">';
+            
+            // Add event listeners for real-time preview
+            ['driver_name', 'location', 'distance_left', 'time_required', 'custom_message', 'parent_phone'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateEmailPreview);
+            });
+        });
+        
+        // Handle form submission
+        $('#notificationForm').submit(function(e) {
+            e.preventDefault();
+            
+            console.log('DEBUG: Form submission started');
+            $('#statusMessage').hide();
+            
+            const formData = $(this).serialize();
+            console.log('DEBUG: Form data:', formData);
+            
+            $.ajax({
+                url: '/driver/send_parent_notification',
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    console.log('DEBUG: AJAX success:', response);
+                    if (response.success) {
+                        showStatus(response.message, 'success');
+                        // Clear form after successful submission
+                        $('#notificationForm')[0].reset();
+                        document.getElementById('studentInfo').style.display = 'none';
+                        updateEmailPreview();
+                    } else {
+                        showStatus(response.error || 'Error sending WhatsApp message', 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log('DEBUG: AJAX error:', xhr.responseText);
+                    console.log('DEBUG: Status:', status);
+                    console.log('DEBUG: Error:', error);
+                    showStatus('Error sending WhatsApp message: ' + (xhr.responseJSON ? xhr.responseJSON.error : error), 'error');
+                }
+            });
+        });
+        
+        function showStatus(message, type) {
+            var statusClass = 'status-' + type;
+            var icon = type === 'success' ? 'check-circle' : 'exclamation-triangle';
+            
+            $('#statusMessage').html(
+                '<div class="status-message ' + statusClass + '">' +
+                '<i class="fas fa-' + icon + '"></i> ' + message +
+                '</div>'
+            ).show();
+        }
+    </script>
+</body>
+</html>

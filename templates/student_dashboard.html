@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Smart Campus Transit System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .welcome-card {
+            text-align: center;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        .pass-status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .pass-status.pending {
+            background: #ffc107;
+            color: #000;
+        }
+        .pass-status.approved {
+            background: #28a745;
+            color: white;
+        }
+        .pass-status.rejected {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .info-item i {
+            width: 30px;
+            color: #667eea;
+        }
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .action-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .action-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+        }
+        .action-icon {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('student_dashboard') }}">
+                <i class="fas fa-bus"></i> Smart Campus Transit
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user"></i> {{ student.name }}
+                </span>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Welcome Card -->
+        <div class="dashboard-card welcome-card">
+            <h2><i class="fas fa-graduation-cap"></i> Welcome, {{ student.name }}!</h2>
+            <p class="mb-0">{{ student.roll_number }} | {{ student.department }} | {{ student.year }}</p>
+        </div>
+
+        <div class="row">
+            <!-- Student Information -->
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h4 class="mb-4"><i class="fas fa-user"></i> Student Information</h4>
+                    <div class="info-item">
+                        <i class="fas fa-id-card"></i>
+                        <span><strong>Roll Number:</strong> {{ student.roll_number }}</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-building"></i>
+                        <span><strong>Department:</strong> {{ student.department }}</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-calendar"></i>
+                        <span><strong>Year:</strong> {{ student.year }}</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-phone"></i>
+                        <span><strong>Phone:</strong> {{ student.phone_number }}</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-user-tie"></i>
+                        <span><strong>Father:</strong> {{ student.father_name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-home"></i>
+                        <span><strong>Address:</strong> {{ student.address }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bus Pass Status -->
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h4 class="mb-4"><i class="fas fa-id-card"></i> Bus Pass Status</h4>
+                    {% if bus_pass %}
+                        <div class="text-center mb-4">
+                            <div class="pass-status {{ bus_pass.status }}">
+                                {{ bus_pass.status.upper() }}
+                            </div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <i class="fas fa-ticket-alt"></i>
+                            <span><strong>Pass Number:</strong> {{ bus_pass.pass_number }}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-route"></i>
+                            <span><strong>Route:</strong> {{ bus_pass.route }}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span><strong>Issue Date:</strong> {{ bus_pass.issue_date }}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar-check"></i>
+                            <span><strong>Expiry Date:</strong> {{ bus_pass.expiry_date }}</span>
+                        </div>
+                        
+                        {% if bus_pass.status == 'approved' %}
+                            <div class="alert alert-success mt-3">
+                                <i class="fas fa-check-circle"></i> Your bus pass is active and ready to use!
+                            </div>
+                        {% elif bus_pass.status == 'pending' %}
+                            <div class="alert alert-warning mt-3">
+                                <i class="fas fa-clock"></i> Your application is under review. Please wait for admin approval.
+                            </div>
+                        {% else %}
+                            <div class="alert alert-danger mt-3">
+                                <i class="fas fa-times-circle"></i> Your application was rejected. Please contact admin.
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center">
+                            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                            <p class="text-muted">You haven't applied for a bus pass yet.</p>
+                            <a href="{{ url_for('apply_pass') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Apply for Bus Pass
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="dashboard-card">
+            <h4 class="mb-4"><i class="fas fa-th"></i> Quick Actions</h4>
+            <div class="quick-actions">
+                <div class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+                    <h5>Apply Bus Pass</h5>
+                    <p class="text-muted">Apply for new bus pass</p>
+                    <a href="{{ url_for('apply_pass') }}" class="btn btn-primary btn-sm">
+                        Apply Now
+                    </a>
+                </div>
+                
+                <div class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h5>Attendance History</h5>
+                    <p class="text-muted">View your attendance records</p>
+                    <button class="btn btn-primary btn-sm" onclick="loadAttendanceHistory()">
+                        <i class="fas fa-eye"></i> View History
+                    </button>
+                </div>
+                
+                <div class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <h5>Live Tracking</h5>
+                    <p class="text-muted">Track bus location</p>
+                    <button class="btn btn-outline-primary btn-sm" disabled>
+                        Coming Soon
+                    </button>
+                </div>
+                
+                <div class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <h5>Settings</h5>
+                    <p class="text-muted">Manage your account</p>
+                    <button class="btn btn-outline-primary btn-sm" disabled>
+                        Coming Soon
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Bus Location -->
+        <div class="dashboard-card">
+            <h4 class="mb-4"><i class="fas fa-map-marked-alt"></i> Live Bus Location</h4>
+            <div id="busLocation">
+                <div class="text-center text-muted">
+                    <i class="fas fa-bus fa-3x mb-3"></i>
+                    <p>Loading bus location...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance History Modal -->
+    <div class="modal fade" id="attendanceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-history"></i> Attendance History
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="attendanceLoading" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading attendance records...</p>
+                    </div>
+                    <div id="attendanceContent" style="display: none;">
+                        <div id="todayAttendance" class="alert alert-info mb-3">
+                            <h6><i class="fas fa-calendar-day"></i> Today's Status</h6>
+                            <div id="todayStatus">No attendance marked today</div>
+                        </div>
+                        <h6><i class="fas fa-list"></i> Recent Attendance</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Boarding Time</th>
+                                        <th>Route</th>
+                                        <th>Pass Number</th>
+                                        <th>Verification</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendanceTableBody">
+                                    <!-- Attendance records will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Load bus location
+        function loadBusLocation() {
+            $.ajax({
+                url: '/get_latest_location',
+                type: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        $('#busLocation').html(
+                            '<div class="alert alert-info">' +
+                            '<div class="row">' +
+                            '<div class="col-md-6">' +
+                            '<h6><i class="fas fa-map-pin"></i> Current Location</h6>' +
+                            '<p class="mb-2"><strong>' + response.current_location + '</strong></p>' +
+                            '</div>' +
+                            '<div class="col-md-6">' +
+                            '<h6><i class="fas fa-flag-checkered"></i> Destination</h6>' +
+                            '<p class="mb-2"><strong>' + response.destination + '</strong></p>' +
+                            '</div>' +
+                            '</div>' +
+                            '<div class="row mt-3">' +
+                            '<div class="col-md-6">' +
+                            '<h6><i class="fas fa-road"></i> Distance Left</h6>' +
+                            '<p class="mb-2"><strong>' + response.distance_left + '</strong></p>' +
+                            '</div>' +
+                            '<div class="col-md-6">' +
+                            '<h6><i class="fas fa-clock"></i> Last Updated</h6>' +
+                            '<p class="mb-2"><small>' + response.timestamp + '</small></p>' +
+                            '</div>' +
+                            '</div>' +
+                            '<div class="mt-3">' +
+                            '<h6><i class="fas fa-comment"></i> Driver Message</h6>' +
+                            '<p class="mb-0">' + response.message + '</p>' +
+                            '</div>' +
+                            '</div>'
+                        );
+                    } else {
+                        $('#busLocation').html(
+                            '<div class="text-center text-muted">' +
+                            '<i class="fas fa-bus fa-3x mb-3"></i>' +
+                            '<p>No location updates available yet</p>' +
+                            '<small>Driver will update location when bus starts</small>' +
+                            '</div>'
+                        );
+                    }
+                },
+                error: function() {
+                    $('#busLocation').html(
+                        '<div class="alert alert-warning">' +
+                        '<i class="fas fa-exclamation-triangle"></i> Unable to load bus location' +
+                        '</div>'
+                    );
+                }
+            });
+        }
+        
+        // Load location on page load and refresh every 30 seconds
+        $(document).ready(function() {
+            loadBusLocation();
+            setInterval(loadBusLocation, 30000); // Refresh every 30 seconds
+        });
+        
+        function loadAttendanceHistory() {
+            $('#attendanceModal').modal('show');
+            $('#attendanceLoading').show();
+            $('#attendanceContent').hide();
+            
+            $.ajax({
+                url: '/student/attendance_history',
+                type: 'GET',
+                success: function(response) {
+                    $('#attendanceLoading').hide();
+                    $('#attendanceContent').show();
+                    
+                    if (response.success && response.attendance.length > 0) {
+                        var today = new Date().toISOString().split('T')[0];
+                        var todayRecord = null;
+                        var tableHtml = '';
+                        
+                        response.attendance.forEach(function(record) {
+                            var statusBadge = record.status === 'present' 
+                                ? '<span class="badge bg-success">Present</span>'
+                                : '<span class="badge bg-secondary">' + record.status + '</span>';
+                            
+                            var verificationIcon = record.verification_type === 'face' 
+                                ? '<i class="fas fa-user-check text-primary"></i> Face Recognition'
+                                : '<i class="fas fa-qrcode text-info"></i> QR Code';
+                            
+                            tableHtml += '<tr>' +
+                                '<td>' + record.date + '</td>' +
+                                '<td>' + record.boarding_time + '</td>' +
+                                '<td>' + record.route + '</td>' +
+                                '<td>' + record.pass_number + '</td>' +
+                                '<td>' + verificationIcon + '</td>' +
+                                '<td>' + statusBadge + '</td>' +
+                                '</tr>';
+                            
+                            // Check for today's attendance
+                            if (record.date === today) {
+                                todayRecord = record;
+                            }
+                        });
+                        
+                        // Update today's status
+                        if (todayRecord) {
+                            $('#todayStatus').html(
+                                '<div class="d-flex justify-content-between align-items-center">' +
+                                '<div><i class="fas fa-check-circle text-success"></i> <strong>Marked Present</strong></div>' +
+                                '<div><small>Time: ' + todayRecord.boarding_time + '</small></div>' +
+                                '</div>'
+                            );
+                            $('#todayAttendance').removeClass('alert-info').addClass('alert-success');
+                        } else {
+                            $('#todayStatus').html('<i class="fas fa-clock text-warning"></i> Not marked yet today');
+                        }
+                        
+                        $('#attendanceTableBody').html(tableHtml);
+                    } else {
+                        $('#attendanceContent').html(
+                            '<div class="text-center text-muted">' +
+                            '<i class="fas fa-inbox fa-3x mb-3"></i>' +
+                            '<p>No attendance records found</p>' +
+                            '</div>'
+                        );
+                    }
+                },
+                error: function() {
+                    $('#attendanceLoading').hide();
+                    $('#attendanceContent').html(
+                        '<div class="alert alert-danger">' +
+                        '<i class="fas fa-exclamation-triangle"></i> Error loading attendance records' +
+                        '</div>'
+                    );
+                }
+            });
+        }
+    </script>
+</body>
+</html>

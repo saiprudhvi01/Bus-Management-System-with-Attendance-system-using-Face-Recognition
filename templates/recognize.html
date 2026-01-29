@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Recognize Face - Face Recognition System{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-search"></i> Recognize Face</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <p class="text-muted">Click the button below to capture a face for recognition.</p>
+                        {% if known_faces %}
+                            <p class="text-info"><i class="fas fa-info-circle"></i> Known faces in database: {{ known_faces|length }}</p>
+                        {% else %}
+                            <p class="text-warning"><i class="fas fa-exclamation-triangle"></i> No faces registered yet. <a href="{{ url_for('register') }}">Register a face first</a>.</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="text-center mb-4">
+                        <button id="recognizeBtn" class="btn btn-primary btn-lg" {% if not known_faces %}disabled{% endif %}>
+                            <i class="fas fa-camera"></i> Capture & Recognize
+                        </button>
+                    </div>
+                    
+                    <div id="loading" class="loading">
+                        <div class="spinner"></div>
+                        <p class="mt-3">Capturing and recognizing...</p>
+                    </div>
+                    
+                    <div id="recognitionResult" style="display: none;">
+                        <h4 class="mb-3 text-center">Recognition Result</h4>
+                        <div class="text-center mb-3">
+                            <img id="capturedImage" class="camera-preview" alt="Captured face">
+                        </div>
+                        
+                        <div id="resultInfo" class="text-center mb-4">
+                            <!-- Result will be displayed here -->
+                        </div>
+                        
+                        <div class="text-center">
+                            <button id="tryAgainBtn" class="btn btn-primary">
+                                <i class="fas fa-redo"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="statusMessage"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if known_faces %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="fas fa-users"></i> Registered Faces</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for face in known_faces %}
+                        <div class="col-md-3 mb-3">
+                            <div class="face-card card text-center p-3">
+                                <div class="mb-2">
+                                    <i class="fas fa-user-circle fa-3x text-primary"></i>
+                                </div>
+                                <h5>{{ face }}</h5>
+                                <button class="btn btn-sm btn-danger delete-face" data-name="{{ face }}">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Ensure jQuery is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof jQuery === 'undefined') {
+        console.error('jQuery not loaded');
+        return;
+    }
+    
+    $(document).ready(function() {
+    $('#recognizeBtn').click(function() {
+        $('#loading').show();
+        $('#recognizeBtn').prop('disabled', true);
+        $('#statusMessage').hide();
+        $('#recognitionResult').hide();
+        
+        $.ajax({
+            url: '/capture_recognize',
+            type: 'POST',
+            success: function(response) {
+                $('#loading').hide();
+                $('#recognizeBtn').prop('disabled', false);
+                
+                if (response.success) {
+                    $('#capturedImage').attr('src', response.image);
+                    
+                    var resultHtml = '';
+                    if (response.recognized_name) {
+                        resultHtml = '<div class="recognized-name"><i class="fas fa-check-circle"></i> ' + response.recognized_name + '</div>' +
+                                    '<div class="alert alert-success mt-3"><i class="fas fa-info-circle"></i> ' + response.message + '</div>';
+                    } else {
+                        resultHtml = '<div class="alert alert-warning"><i class="fas fa-question-circle"></i> ' + response.message + '</div>';
+                    }
+                    
+                    $('#resultInfo').html(resultHtml);
+                    $('#recognitionResult').show();
+                } else {
+                    showStatus(response.error, 'error');
+                }
+            },
+            error: function() {
+                $('#loading').hide();
+                $('#recognizeBtn').prop('disabled', false);
+                showStatus('Error recognizing face. Please try again.', 'error');
+            }
+        });
+    });
+    
+    $('#tryAgainBtn').click(function() {
+        $('#recognitionResult').hide();
+        $('#statusMessage').hide();
+    });
+    
+    $('.delete-face').click(function() {
+        var name = $(this).data('name');
+        
+        if (confirm('Are you sure you want to delete the face for ' + name + '?')) {
+            $.ajax({
+                url: '/delete_face',
+                type: 'POST',
+                data: {
+                    name: name
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showStatus(response.message, 'success');
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showStatus(response.error, 'error');
+                    }
+                },
+                error: function() {
+                    showStatus('Error deleting face. Please try again.', 'error');
+                }
+            });
+        }
+    });
+    
+    function showStatus(message, type) {
+        var statusClass = 'status-' + type;
+        var icon = type === 'success' ? 'check-circle' : 'exclamation-triangle';
+        
+        $('#statusMessage').html(
+            '<div class="status-message ' + statusClass + '">' +
+            '<i class="fas fa-' + icon + '"></i> ' + message +
+            '</div>'
+        ).show();
+    }
+    });
+});
+</script>
+{% endblock %}

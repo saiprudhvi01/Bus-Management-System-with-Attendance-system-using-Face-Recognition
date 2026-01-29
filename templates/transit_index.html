@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus Transit System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .hero-section {
+            padding: 80px 0;
+            text-align: center;
+            color: white;
+        }
+        .hero-section h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .hero-section .subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        .feature-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        .feature-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .team-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 50px 0;
+            backdrop-filter: blur(10px);
+        }
+        .team-section h3 {
+            color: white;
+            margin-bottom: 20px;
+        }
+        .team-member {
+            color: white;
+            padding: 10px;
+        }
+        .abstract-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 40px;
+            margin: 30px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top" style="background: rgba(255, 255, 255, 0.95);">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-bus"></i> Smart Campus Transit
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="#features">Features</a>
+                <a class="nav-link" href="#about">About</a>
+                <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="container">
+            <h1><i class="fas fa-bus"></i> Smart Campus Transit System</h1>
+            <p class="subtitle">Online Bus Pass, Face-Based Attendance & Live Tracking</p>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-sign-in-alt"></i> Login to System
+                    </a>
+                    <a href="{{ url_for('register') }}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-user-plus"></i> New Registration
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Abstract Section -->
+    <div class="container">
+        <div class="abstract-section">
+            <h2 class="text-center mb-4"><i class="fas fa-file-alt"></i> Abstract</h2>
+            <p>The Smart Campus Transit System with Online Bus Pass, Face-Based Attendance & Live Tracking is an integrated web and Android-based application designed to automate and secure college transportation services. The system replaces the traditional paper-based bus pass mechanism with a digital platform that enables students to apply and renew bus passes online. It uses face recognition and QR verification to authenticate students during boarding and drop-off, ensuring safety and preventing misuse.</p>
+            
+            <p>The system sends real-time notifications to parents when students board the bus and when they safely arrive at the destination. Additionally, GPS-based live bus tracking allows parents and administrators to monitor bus locations in real time. This solution enhances operational efficiency, improves student safety, ensures transparency, and reduces administrative workload.</p>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div id="features" class="container">
+        <h2 class="text-center text-white mb-5">Key Features</h2>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+                    <h4>Online Bus Pass</h4>
+                    <p>Digital bus pass application and renewal system with secure photo verification</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <h4>Face Recognition</h4>
+                    <p>AI-powered face detection and recognition for secure student authentication</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <h4>Live GPS Tracking</h4>
+                    <p>Real-time bus location monitoring for parents and administrators</p>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h4>Parent Notifications</h4>
+                    <p>Instant alerts when students board and reach their destination safely</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <h4>Automated Attendance</h4>
+                    <p>Contactless attendance marking with biometric verification</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h4>Admin Dashboard</h4>
+                    <p>Comprehensive management system for administrators and drivers</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Section -->
+    <div id="about" class="container">
+        <div class="team-section">
+            <h3><i class="fas fa-users"></i> Team Details</h3>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="team-member">
+                        <strong>Harshini</strong><br>
+                        23X45A0522
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="team-member">
+                        <strong>Payal Saniya</strong><br>
+                        23X45A0521
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="team-member">
+                        <strong>Titus</strong><br>
+                        23X45A0515
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="team-member">
+                        <strong>Vishnu Vardhan</strong><br>
+                        22X41A0588
+                    </div>
+                </div>
+            </div>
+            <p class="text-white mt-3"><strong>Under the guidance of: Dr. A. Radhika Madam</strong></p>
+        </div>
+    </div>
+
+    <!-- Workflow Section -->
+    <div class="container">
+        <div class="abstract-section">
+            <h2 class="text-center mb-4"><i class="fas fa-project-diagram"></i> System Workflow</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-arrow-right text-primary"></i> Student applies for bus pass online</h5>
+                    <h5><i class="fas fa-arrow-right text-primary"></i> Admin verifies and approves the request</h5>
+                    <h5><i class="fas fa-arrow-right text-primary"></i> Student boards bus → face & QR verification</h5>
+                </div>
+                <div class="col-md-6">
+                    <h5><i class="fas fa-arrow-right text-primary"></i> Parent receives pickup notification</h5>
+                    <h5><i class="fas fa-arrow-right text-primary"></i> Bus reaches college → re-verification</h5>
+                    <h5><i class="fas fa-arrow-right text-primary"></i> Parent receives arrival notification</h5>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <h5><i class="fas fa-check-circle text-success"></i> Attendance is marked automatically</h5>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-white">
+        <div class="container">
+            <p>&copy; 2024 Smart Campus Transit System. Built with Flask & OpenCV.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
