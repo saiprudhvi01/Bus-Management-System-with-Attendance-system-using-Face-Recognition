@@ -50,12 +50,14 @@ A comprehensive bus management system for educational institutions featuring aut
 
 ## 🚀 Installation
 
-### Prerequisites
+### Local Development
+
+#### Prerequisites
 - Python 3.8+
 - pip package manager
 - Webcam for face recognition
 
-### Setup Instructions
+#### Setup Instructions
 
 1. **Clone the repository**
    ```bash
@@ -85,6 +87,54 @@ A comprehensive bus management system for educational institutions featuring aut
 
 6. **Access the system**
    - Open http://127.0.0.1:5000 in your browser
+
+### Render Deployment (Recommended)
+
+#### Quick Deploy to Render
+
+1. **Fork the repository** to your GitHub account
+2. **Go to Render Dashboard**: https://dashboard.render.com/
+3. **Click "New +" → "Web Service"**
+4. **Connect your GitHub repository**
+5. **Use these settings**:
+   - **Name**: `smart-campus-transit`
+   - **Runtime**: `Python`
+   - **Build Command**: `pip install -r requirements-render.txt`
+   - **Start Command**: `python app-render.py`
+   - **Instance Type**: `Free`
+
+6. **Add Environment Variables**:
+   - `FLASK_ENV`: `production`
+   - `PYTHON_VERSION`: `3.9.16`
+
+7. **Click "Create Web Service"**
+
+#### Render-Specific Files
+
+- `requirements-render.txt` - Optimized dependencies for Render
+- `app-render.py` - Render-compatible version (without face recognition)
+- `render.yaml` - Render configuration file
+
+#### Why Separate Render Version?
+
+Render has build timeouts and face recognition libraries (dlib) take too long to compile. The Render version includes:
+- ✅ All core features (WhatsApp, attendance, tracking)
+- ✅ Fast deployment (< 5 minutes)
+- ✅ Manual attendance option
+- ❌ Face recognition (requires local deployment)
+
+#### Features Available on Render:
+
+- ✅ **WhatsApp Notifications**: Full parent communication
+- ✅ **Manual Attendance**: Driver can mark attendance manually
+- ✅ **Location Tracking**: Real-time bus location updates
+- ✅ **Bus Pass Management**: Complete application workflow
+- ✅ **Admin Dashboard**: Full administrative control
+- ✅ **Student Portal**: Self-service access
+
+#### For Face Recognition:
+
+Use the local version with `requirements.txt` and `bus_pass_app.py` for full face recognition capabilities.
 
 ## 🔐 Default Login Credentials
 

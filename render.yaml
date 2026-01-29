@@ -1,0 +1,30 @@
+services:
+  # Type of service
+  type: web
+  
+  # Name of your service
+  name: smart-campus-transit
+  
+  # Runtime environment
+  runtime: python
+  
+  # Build configuration
+  buildCommand: "pip install -r requirements-render.txt"
+  startCommand: "python app-render.py"
+  
+  # Environment variables
+  env:
+    # Add your environment variables here
+    - key: FLASK_ENV
+      value: production
+    - key: PYTHON_VERSION
+      value: 3.9.16
+  
+  # Auto-deploy configuration
+  autoDeploy: true
+  
+  # Health check
+  healthCheckPath: /
+  
+  # Plan
+  plan: free
