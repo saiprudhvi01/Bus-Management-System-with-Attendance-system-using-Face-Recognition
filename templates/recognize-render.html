@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Face Recognition Attendance{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-camera"></i> Face Recognition Attendance
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="text-center">
+                                <h5 class="mb-3">Camera Feed</h5>
+                                <div class="camera-container">
+                                    <video id="video" width="400" height="300" autoplay></video>
+                                    <canvas id="canvas" width="400" height="300" style="display: none;"></canvas>
+                                </div>
+                                <div class="mt-3">
+                                    <button id="startCamera" class="btn btn-success">
+                                        <i class="fas fa-video"></i> Start Camera
+                                    </button>
+                                    <button id="capturePhoto" class="btn btn-primary" disabled>
+                                        <i class="fas fa-camera"></i> Capture Photo
+                                    </button>
+                                    <button id="recognizeFace" class="btn btn-info" disabled>
+                                        <i class="fas fa-user-check"></i> Recognize Face
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="recognition-result">
+                                <h5 class="mb-3">Recognition Result</h5>
+                                <div id="resultContainer">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Click "Start Camera" to begin face recognition
+                                    </div>
+                                </div>
+                                <div id="capturedImage" class="mt-3" style="display: none;">
+                                    <h6>Captured Image:</h6>
+                                    <img id="capturedImg" class="img-fluid rounded" style="max-width: 300px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6><i class="fas fa-info-circle"></i> Instructions:</h6>
+                                    <ol>
+                                        <li>Click "Start Camera" to activate the webcam</li>
+                                        <li>Position your face clearly in the camera frame</li>
+                                        <li>Click "Capture Photo" to take a picture</li>
+                                        <li>Click "Recognize Face" to identify the student</li>
+                                        <li>Attendance will be automatically marked if recognized</li>
+                                    </ol>
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <strong>Note:</strong> This is a simplified face recognition system for demonstration. 
+                                        For production use, consider using advanced face recognition libraries.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.camera-container {
+    position: relative;
+    display: inline-block;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#video, #canvas {
+    display: block;
+    border-radius: 6px;
+}
+
+.recognition-result {
+    min-height: 300px;
+}
+
+.result-success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.result-error {
+    background: linear-gradient(135deg, #dc3545, #fd7e14);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.result-processing {
+    background: linear-gradient(135deg, #007bff, #6f42c1);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+</style>
+
+<script>
+let video = document.getElementById('video');
+let canvas = document.getElementById('canvas');
+let context = canvas.getContext('2d');
+let stream = null;
+
+document.getElementById('startCamera').addEventListener('click', async function() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        
+        document.getElementById('startCamera').disabled = true;
+        document.getElementById('capturePhoto').disabled = false;
+        
+        showResult('info', 'Camera started! Position your face and click "Capture Photo".');
+    } catch (err) {
+        console.error('Error accessing camera:', err);
+        showResult('error', 'Unable to access camera. Please check permissions.');
+    }
+});
+
+document.getElementById('capturePhoto').addEventListener('click', function() {
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    const imageData = canvas.toDataURL('image/jpeg');
+    document.getElementById('capturedImg').src = imageData;
+    document.getElementById('capturedImage').style.display = 'block';
+    
+    document.getElementById('capturePhoto').disabled = true;
+    document.getElementById('recognizeFace').disabled = false;
+    
+    showResult('info', 'Photo captured! Click "Recognize Face" to identify the student.');
+});
+
+document.getElementById('recognizeFace').addEventListener('click', function() {
+    const imageData = canvas.toDataURL('image/jpeg');
+    
+    document.getElementById('recognizeFace').disabled = true;
+    showResult('processing', 'Processing face recognition...');
+    
+    // Send image to server for recognition
+    fetch('/api/recognize', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            image: imageData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showResult('success', `
+                <h5><i class="fas fa-check-circle"></i> Face Recognized!</h5>
+                <p><strong>Student:</strong> ${data.student.name}</p>
+                <p><strong>Pass Number:</strong> ${data.student.pass_number}</p>
+                <p><strong>Route:</strong> ${data.student.route}</p>
+                <p><strong>Message:</strong> ${data.message}</p>
+            `);
+            
+            // Reset after successful recognition
+            setTimeout(() => {
+                resetCapture();
+            }, 3000);
+        } else {
+            showResult('error', `
+                <h5><i class="fas fa-times-circle"></i> Recognition Failed</h5>
+                <p>${data.message}</p>
+            `);
+            
+            // Allow retry
+            document.getElementById('recognizeFace').disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showResult('error', 'Error occurred during face recognition. Please try again.');
+        document.getElementById('recognizeFace').disabled = false;
+    });
+});
+
+function showResult(type, message) {
+    const resultContainer = document.getElementById('resultContainer');
+    let className = '';
+    let icon = '';
+    
+    switch(type) {
+        case 'success':
+            className = 'result-success';
+            icon = 'fa-check-circle';
+            break;
+        case 'error':
+            className = 'result-error';
+            icon = 'fa-times-circle';
+            break;
+        case 'processing':
+            className = 'result-processing';
+            icon = 'fa-spinner fa-spin';
+            break;
+        default:
+            className = 'alert alert-info';
+            icon = 'fa-info-circle';
+    }
+    
+    resultContainer.innerHTML = `
+        <div class="${className}">
+            <i class="fas ${icon}"></i>
+            ${message}
+        </div>
+    `;
+}
+
+function resetCapture() {
+    document.getElementById('capturePhoto').disabled = false;
+    document.getElementById('recognizeFace').disabled = true;
+    document.getElementById('capturedImage').style.display = 'none';
+    showResult('info', 'Ready for next recognition. Capture another photo or stop camera.');
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+});
+</script>
+{% endblock %}
