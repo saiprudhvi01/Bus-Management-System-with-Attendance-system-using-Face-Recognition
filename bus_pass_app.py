@@ -10,6 +10,7 @@ from werkzeug.utils import secure_filename
 from functools import wraps
 import requests
 import urllib.parse
+import base64
 app = Flask(__name__)
 app.secret_key = 'smart_campus_transit_2024'
 
@@ -246,17 +247,25 @@ class FaceRecognitionSystem:
     
     def recognize_student(self, image_path, tolerance=0.6):
         """Recognize student from image using histogram correlation"""
+        print(f"DEBUG: Starting face recognition for {image_path}")
+        
         unknown_encoding = self.extract_face_encoding(image_path)
         if unknown_encoding is None:
+            print("DEBUG: No face detected in image")
             return None, "No face detected"
         
+        print(f"DEBUG: Face encoding extracted, shape: {unknown_encoding.shape}")
+        
         if not self.known_faces:
+            print("DEBUG: No known faces in database")
             return None, "No registered students in database"
+        
+        print(f"DEBUG: Found {len(self.known_faces)} known faces: {list(self.known_faces.keys())}")
         
         best_match = None
         best_score = -1
         
-        for student_id, encoding in self.known_faces.items():
+        for key, encoding in self.known_faces.items():
             encoding = np.array(encoding)
             
             try:
@@ -266,17 +275,49 @@ class FaceRecognitionSystem:
                 correlation = cv2.compareHist(encoding_reshaped, unknown_encoding_reshaped, cv2.HISTCMP_CORREL)
                 
                 correlation_score = float(correlation)
+                print(f"DEBUG: Comparing with '{key}': score = {correlation_score:.4f}")
+                
                 if correlation_score > best_score:
                     best_score = correlation_score
-                    best_match = student_id
+                    best_match = key
                     
             except Exception as e:
+                print(f"DEBUG: Error comparing with '{key}': {e}")
                 continue
         
+        print(f"DEBUG: Best match: '{best_match}' with score: {best_score:.4f}")
+        print(f"DEBUG: Tolerance: {tolerance}")
+        
         if best_score >= tolerance:
-            return best_match, f"Student recognized (similarity: {best_score:.4f})"
+            # Check if the match is a student ID or name
+            if best_match.isdigit():
+                # It's a student ID
+                print(f"DEBUG: Match is student ID: {best_match}")
+                return best_match, f"Student recognized (similarity: {best_score:.4f})"
+            else:
+                # It's a name, try to find the student by name
+                print(f"DEBUG: Match is name: '{best_match}', looking up student...")
+                student = self.get_student_by_name(best_match)
+                if student:
+                    print(f"DEBUG: Student found: ID={student['student_id']}, Name={student['name']}")
+                    return str(student['student_id']), f"Student recognized (similarity: {best_score:.4f})"
+                else:
+                    print(f"DEBUG: Student '{best_match}' not found in database")
+                    return None, f"Face recognized but student '{best_match}' not found in database"
         else:
+            print(f"DEBUG: Score {best_score:.4f} below tolerance {tolerance}")
             return None, f"Unknown student (best similarity: {best_score:.4f})"
+    
+    def get_student_by_name(self, name):
+        """Get student by name from database"""
+        try:
+            conn = get_db_connection()
+            student = conn.execute('SELECT * FROM students WHERE name = ?', (name,)).fetchone()
+            conn.close()
+            return student
+        except Exception as e:
+            print(f"Error finding student by name: {e}")
+            return None
     
     def load_known_faces(self):
         """Load known faces from file"""
