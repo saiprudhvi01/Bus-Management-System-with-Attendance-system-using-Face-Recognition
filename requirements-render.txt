@@ -9,7 +9,7 @@ MarkupSafe==3.0.3
 blinker==1.9.0
 
 # Image processing (lighter alternatives)
-Pillow==12.1.0
+Pillow==12.1.1
 numpy==2.4.1
 
 # For deployment without face recognition
